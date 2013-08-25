@@ -1,0 +1,13 @@
+{
+  "name": "app",
+  "version": "0.1.0",
+  "author": "Raminder Singh <romi_ssk@yahoo.co.in>",
+  "description": "A command line client for polyglot",
+  "dependencies": {
+    "polyglot": "0.1.x"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=0.10"
+  }
+}
