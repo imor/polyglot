@@ -14,6 +14,7 @@
 	"opening book"
   ],
   "dependencies": {
+      "chess.js": "0.1.x"
   },
   "license": "MIT",
   "engines": {

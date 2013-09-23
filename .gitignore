@@ -12,5 +12,6 @@ logs
 results
 
 npm-debug.log
-/node_modules
-/examples/node_modules
+node_modules/
+examples/node_modules/
+build/
