@@ -1,13 +1,11 @@
 Polyglot
 ========
-
-Polyglot is a node module using which a chess opening book in polyglot format can be queried for the existence of a move.
-
+Polyglot is a node module to search moves in polyglot format opening books.
 
 ## Installation
 Make sure you have [node.js](http://nodejs.org/) installed. Then do:
 
-    $ npm install uci
+    $ npm install polyglot
     
 ## Example
 Coming soon.

@@ -3,7 +3,7 @@
   "main": "./lib/main.js",
   "version": "0.1.0",
   "author": "Raminder Singh <romi_ssk@yahoo.co.in>",
-  "description": "Polyglot is a node module using which a chess opening book in polyglot format can be queried for the existence of a move",
+  "description": "Polyglot is a node module to search moves in polyglot format opening books.",
   "repository": {
     "type": "git",
     "url": "https://github.com/imor/polyglot.git"
