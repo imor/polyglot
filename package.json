@@ -11,13 +11,17 @@
   "keywords": [
     "chess",
     "polyglot",
-	"opening book"
+    "opening book"
   ],
   "dependencies": {
-      "chess.js": "0.1.x"
+    "chess.js": "0.1.x"
   },
   "license": "MIT",
   "engines": {
     "node": ">=0.10"
+  },
+  "devDependencies": {
+    "grunt": "~0.4.1",
+    "grunt-contrib-jshint": "~0.6.4"
   }
 }
