@@ -1,15 +1,46 @@
+/* Code in this file is a derivative work from the following sources -
+*  stockfish engine - https://github.com/mcostalba/Stockfish
+*  pg_key.c - http://hardy.uhasselt.be/Toga/pg_key.c
+*  pg_show.c - http://hardy.uhasselt.be/Toga/pg_show.c
+*
+*  While the pg_key.c and pg_show.c are in public domain the stockfish
+*  source is GPL licnesed. To read the GPL license visit the above
+*  github link.
+*
+*  For a full description of the polyglot book format refer to
+*  http://hardy.uhasselt.be/Toga/book_format.html
+*  The random number array below is also taken from the above link
+*  which is yet again copied from the original polyglot source.
+*/
 #include <sstream>
+#include <fstream>
+#include <algorithm>
+#include <cassert>
 #include <node.h>
-#include "polyglot.h"
+#include <string.h>
+#include "rkiss.h"
+
+#ifndef _WIN32 // Linux - Unix
+#include <sys/time.h>
+
+inline int64_t system_time_to_msec() {
+    timeval t;
+    gettimeofday(&t, NULL);
+    return t.tv_sec * 1000LL + t.tv_usec / 1000;
+}
+#else // Windows and MinGW
+#include <sys/timeb.h>
+
+inline int64_t system_time_to_msec() {
+    _timeb t;
+    _ftime(&t);
+    return t.time * 1000LL + t.millitm;
+}
+#endif
 
 using namespace v8;
 using namespace std;
 
-Persistent<FunctionTemplate> Polyglot::constructor;
-
-//For an explanation of the implemenration of the Hash function and the mystery
-//of the following random numbers visit the following link -
-//http://hardy.uhasselt.be/Toga/book_format.html
 const uint64_t Random64[781] = {
     0x9D39247E33776D41, 0x2AF7398005AAA5C7, 0x44DB015024623547, 0x9C15F73E62A76AE2,
     0x75834465489C0C89, 0x3290AC3A203001BF, 0x0FBBAD1F61042279, 0xE83A908FF2FB60CA,
@@ -214,81 +245,217 @@ const uint64_t *RandomCastle = Random64 + 768;
 const uint64_t *RandomEnPassant = Random64 + 772;
 const uint64_t *RandomTurn = Random64 + 780;
 
-void Polyglot::Init(Handle<Object> target) {
-    HandleScope scope;
+struct Entry {
+    uint64_t key;
+    uint16_t move;
+    uint16_t weight;
+    uint32_t learn;
+};
 
-    Local<FunctionTemplate> funcTemplate = FunctionTemplate::New(New);
-    Local<String> name = String::NewSymbol("Polyglot");
+RKISS rkiss(system_time_to_msec() % 10000);
+const char *promotionPieces = " nbrq";
 
-    constructor = Persistent<FunctionTemplate>::New(funcTemplate);
-    constructor->InstanceTemplate()->SetInternalFieldCount(1);
-    constructor->SetClassName(name);
-
-    NODE_SET_PROTOTYPE_METHOD(constructor, "find_best", FindBest);
-    NODE_SET_PROTOTYPE_METHOD(constructor, "find_first", FindFirst);
-    NODE_SET_PROTOTYPE_METHOD(constructor, "hash", Hash);
-
-    target->Set(name, constructor->GetFunction());
+/** Reads length bytes into an integer
+*   param file File pointer to the open book file descriptor
+*   param length
+*   param result Pointer to the integer into which to put the result
+*/
+int ReadIntFromFile(FILE *file, int length, uint64_t *r){
+    int c;
+    for (int i = 0;i < length;i++) {
+        c = fgetc(file);
+        if (c == EOF){
+            return 1;
+        }
+        (*r) = ((*r) << 8) + c;
+    }
+    return 0;
 }
 
-Polyglot::Polyglot(string bookFile) :
-    ObjectWrap(),
-    bookFile(bookFile) {}
+/** Reads one entry from the book file
+*   param File pointer to the open book file descriptor
+*   param entry Pointer to the entry object into which to read the entry
+*/
+int ReadEntryFromFile(FILE *file, Entry *entry){
+    uint64_t r;
+    int ret = ReadIntFromFile(file, 8, &r);
+    if(ret) return 1;
 
-Handle<Value> Polyglot::New(const Arguments& args) {
-    HandleScope scope;
+    entry->key = r;
+    ret = ReadIntFromFile(file, 2, &r);
+    if(ret) return 1;
 
-    if (!args.IsConstructCall()) {
-        return ThrowException(Exception::TypeError(
-            String::New("Use the new operator to create instances of this object."))
-        );
-    }
+    entry->move = r;
+    ret = ReadIntFromFile(file, 2, &r);
+    if(ret) return 1;
 
-    if (args.Length() < 1) {
-        return ThrowException(Exception::TypeError(
-            String::New("First argument must be the name of the book file."))
-        );
-    }
+    entry->weight = r;
+    ret = ReadIntFromFile(file, 4, &r);
+    if(ret) return 1;
 
-    String::Utf8Value bookFile(args[0]->ToString());
-    Polyglot* polyglot = new Polyglot(*bookFile);
-    polyglot->Wrap(args.This());
-
-    return args.This();
+    entry->learn = r;
+    return 0;
 }
 
-Handle<Value> Polyglot::FindBest(const Arguments& args) {
+/** Finds the first move in a book file
+*   param bookFile The book file path
+*   param key A polyglot hash of the position
+*/
+int FindKey(FILE *file, uint64_t key) {
+    fseek(file, 0, SEEK_END);
+    int start = 0;
+    int end = (int)ftell(file) / sizeof(Entry) - 1;
+    int middle;
+    Entry entry;
+
+    assert(start <= end);
+
+    fseek(file, 0, SEEK_SET);
+
+    while (start < end) {
+        middle = (start + end) / 2;
+        assert(middle >= start && middle < end);
+        fseek(file, middle * sizeof(Entry), SEEK_SET);
+        ReadEntryFromFile(file, &entry);
+
+        if (key <= entry.key) {
+            end = middle;
+        } else {
+            start = middle + 1;
+        }
+    }
+
+    assert(start == end);
+    return start;
+}
+
+/** Converts the polyglot format move to a SAN move
+*   param moveStr The char array into which the SAN move is copied
+*   param move The polyglot format move
+*/
+void MoveToString(char moveStr[6], uint16_t move) {
+    int from = (move >> 6) & 077;
+    int fromRow = (from >> 3) & 0x7;
+    int fromFile = from & 0x7;
+    int to = move & 077;
+    int toRow = (to >> 3) & 0x7;
+    int toFile = to & 0x7;
+    int promotion = (move >> 12) & 0x7;
+
+    moveStr[0] = fromFile + 'a';
+    moveStr[1] = fromRow + '1';
+    moveStr[2] = toFile + 'a';
+    moveStr[3] = toRow + '1';
+
+    if (promotion) {
+        moveStr[4] = promotionPieces[promotion];
+        moveStr[5] = '\0';
+    } else {
+        moveStr[4] = '\0';
+    }
+
+    //Convert the castling moves to standard notation
+    if (!strcmp(moveStr, "e1h1")) {
+        strcpy(moveStr, "e1g1");
+    } else if (!strcmp(moveStr, "e1a1")) {
+        strcpy(moveStr, "e1c1");
+    } else if (!strcmp(moveStr, "e8h8")) {
+        strcpy(moveStr, "e8g8");
+    } else if (!strcmp(moveStr, "e8a8")) {
+        strcpy(moveStr, "e8c8");
+    }
+}
+
+uint16_t FindInternal(uint64_t key, const char* bookFile, bool searchBest) {
+    Entry entry;
+    uint16_t bestWeight = 0;
+    uint64_t totalWeight = 0;
+    uint16_t move = 0;
+    FILE *file = fopen(bookFile, "rb");
+    if (!file) {
+        return 0;
+    }
+
+    int offset = FindKey(file, key);
+    fseek(file, offset * sizeof(Entry), SEEK_SET);
+
+    while (true) {
+        int ret = ReadEntryFromFile(file, &entry);
+        if (ret) {
+            break;
+        }
+        if (entry.key != key) {
+            break;
+        }
+
+        bestWeight = max(bestWeight, entry.weight);
+        totalWeight += entry.weight;
+
+        if ((totalWeight && rkiss.rand<unsigned>() % totalWeight < entry.weight)
+            || (searchBest && entry.weight == bestWeight)) {
+            move = entry.move;
+        }
+    }
+
+    return move;
+}
+
+/** Finds the move corresponding to the hash in a book file
+*   param hash A polyglot hash of the position
+*   param bookFile The book file path
+*   param findBest A flag specifying whether to find the best move or a random one
+*/
+Handle<Value> Find(const Arguments& args) {
     HandleScope scope;
 
-    if (args.Length() < 1 || !args[0]->IsString()) {
+    if (args.Length() != 3) {
         return ThrowException(Exception::TypeError(
-            String::New("First argument must be the fen string."))
+            String::New("Incorrect number of arguments."))
+        );
+    }
+    if (!args[0]->IsString()) {
+        return ThrowException(Exception::TypeError(
+            String::New("First argument should be a string."))
+        );
+    }
+    if (!args[1]->IsString()) {
+        return ThrowException(Exception::TypeError(
+            String::New("Second argument should be a string."))
+        );
+    }
+    if (!args[2]->IsBoolean()) {
+        return ThrowException(Exception::TypeError(
+            String::New("Third argument should be a boolean."))
         );
     }
 
+    String::Utf8Value temp(args[0]->ToString());
+    istringstream i(*temp);
+    uint64_t hash64;
+    i >> hash64;
+    String::Utf8Value temp1(args[1]->ToString());
+    string bookFile = string(*temp1);
+    bool searchBest = args[2]->BooleanValue();
+
+    uint16_t move = FindInternal(hash64, bookFile.c_str(), searchBest);
+    char moveStr[6];
+    MoveToString(moveStr, move);
     return scope.Close(
-        String::New("FindBestReturned"));
+        String::New(moveStr));
 }
 
-Handle<Value> Polyglot::FindFirst(const Arguments& args) {
-    HandleScope scope;
-
-    if (args.Length() < 1 || !args[0]->IsString()) {
-        return ThrowException(Exception::TypeError(
-            String::New("First argument must be the fen string."))
-        );
-    }
-
-    return scope.Close(
-        String::New("FindFirstReturned"));
-}
-
-Handle<Value> Polyglot::Hash(const Arguments& args) {
+/** Calculates the polyglot hash of a position
+*   param pieceOffsets Offsets of pieces in the Random64 array
+*   param castleOffsets Offsets of castling availability in the Random64 array
+*   param enPassantOffset Offset of the en passant square in the Random64 array
+*   param turnOffset Offset of the turn in the Random64 array
+*/
+Handle<Value> Hash(const Arguments& args) {
     HandleScope scope;
 
     if (args.Length() != 4) {
         return ThrowException(Exception::TypeError(
-            String::New("Incorrect number or type of arguments."))
+            String::New("Incorrect number of arguments."))
         );
     }
     if (!args[0]->IsArray()) {
@@ -339,7 +506,10 @@ Handle<Value> Polyglot::Hash(const Arguments& args) {
 }
 
 void RegisterModule(Handle<Object> target) {
-    Polyglot::Init(target);
+    target->Set(String::NewSymbol("find"),
+        FunctionTemplate::New(Find)->GetFunction());
+    target->Set(String::NewSymbol("hash"),
+        FunctionTemplate::New(Hash)->GetFunction());
 }
 
 NODE_MODULE(polyglot, RegisterModule);

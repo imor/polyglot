@@ -6,7 +6,7 @@ Polyglot is a node module to search moves in polyglot format opening books.
 Make sure you have [node.js](http://nodejs.org/) installed. Then do:
 
     $ npm install polyglot
-    
+
 ## Example
 Coming soon.
 

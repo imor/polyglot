@@ -2,9 +2,9 @@
 
 var Polyglot = require('./lib/main.js').Polyglot;
 
-var obj = new Polyglot("SomeBook");
+var obj = new Polyglot();
 
-console.log(obj.find_best("random fen"));
-console.log(obj.find_first("invalid fen"));
-var fen = "rnbqkbnr/p1pppppp/8/8/P6P/R1p5/1P1PPPP1/1NBQKBNR b Kkq - 0 4";
+var fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 console.log("Polyglot hash for fen " + fen + " is: " + obj.hash(fen));
+console.log("Best move in the book is: " + obj.find(fen, "book.bin", true));
+console.log("Random move in the book is: " + obj.find(fen, "book.bin", false));
