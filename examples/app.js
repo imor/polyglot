@@ -1,6 +1,6 @@
 'use strict';
 
-var Polyglot = require('./lib/main.js').Polyglot;
+var Polyglot = require('polyglot').Polyglot;
 
 var obj = new Polyglot();
 
