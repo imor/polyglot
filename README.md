@@ -37,7 +37,7 @@ Fork, pick an issue to fix from [issues](https://github.com/imor/polyglot/issues
 or add a missing feature and send a pull request.
 
 ## Credits
-This work is derivative of the excellent [stockfish](https://github.com/mcostalba/Stockfish
+This work is derivative of the excellent [stockfish](https://github.com/mcostalba/Stockfish)
 polyglot book source code.
 
 ## License
