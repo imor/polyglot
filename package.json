@@ -1,5 +1,5 @@
 {
-  "name": "polyglot",
+  "name": "polyglot-chess",
   "main": "./lib/main.js",
   "version": "0.1.0",
   "author": "Raminder Singh <romi_ssk@yahoo.co.in>",
