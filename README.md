@@ -5,11 +5,11 @@ Polyglot is a node module to search moves in polyglot format opening books.
 ## Installation
 Make sure you have [node.js](http://nodejs.org/) installed. Then do:
 
-    $ npm install polyglot
+    $ npm install polyglot-chess
 
 ## Example
 ```js
-var Polyglot = require('polyglot').Polyglot;
+var Polyglot = require('polyglot-chess').Polyglot;
 
 var obj = new Polyglot();
 

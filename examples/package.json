@@ -4,7 +4,7 @@
   "author": "Raminder Singh <romi_ssk@yahoo.co.in>",
   "description": "A command line client for polyglot",
   "dependencies": {
-    "polyglot": "0.1.x"
+    "polyglot-chess": "0.1.x"
   },
   "license": "MIT",
   "engines": {

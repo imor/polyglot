@@ -1,6 +1,6 @@
 'use strict';
 
-var Polyglot = require('polyglot').Polyglot;
+var Polyglot = require('polyglot-chess').Polyglot;
 
 var obj = new Polyglot();
 
