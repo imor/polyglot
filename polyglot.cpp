@@ -391,8 +391,11 @@ uint16_t FindInternal(uint64_t key, const char* bookFile, bool searchBest) {
         bestWeight = max(bestWeight, entry.weight);
         totalWeight += entry.weight;
 
-        if ((totalWeight && rkiss.rand<unsigned>() % totalWeight < entry.weight)
-            || (searchBest && entry.weight == bestWeight)) {
+        if (searchBest) {
+            if (entry.weight == bestWeight) {
+                move = entry.move;
+            }
+        } else if (totalWeight && rkiss.rand<unsigned>() % totalWeight < entry.weight) {
             move = entry.move;
         }
     }
