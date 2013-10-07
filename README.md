@@ -25,9 +25,10 @@ console.log("Random move in the book is: " + obj.find(fen, "book.bin", false));
 Polyglot exposes following functions -
 
 #### find(fen, bookFile, findBest)
-find takes a book file path and a polyglot format hash and looks up the hash in
-the book file. If findBest is true it returns the best move according to the
-weight otherwise it returns a random move with the given hash.
+find takes a fen string and a book file path and looks up the hash in the book
+file. If findBest is true it returns the best move according to the weight
+otherwise it returns a random move with the given hash. If no move is found it
+returns an empty string.
 
 #### hash(fen)
 hash takes a fen string and returns its polyglot hash.

@@ -364,6 +364,10 @@ void MoveToString(char moveStr[6], uint16_t move) {
     } else if (!strcmp(moveStr, "e8a8")) {
         strcpy(moveStr, "e8c8");
     }
+
+    if (!strcmp(moveStr, "a1a1")) {
+        strcpy(moveStr, "");
+    }
 }
 
 uint16_t FindInternal(uint64_t key, const char* bookFile, bool searchBest) {
