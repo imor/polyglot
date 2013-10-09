@@ -33,6 +33,16 @@ returns an empty string.
 #### hash(fen)
 hash takes a fen string and returns its polyglot hash.
 
+## Linting
+To lint the js files with jshint run the command:
+
+    $ grunt lint
+
+## Running Tests
+To run the tests with mocha run the command:
+
+    $ grunt test
+
 ## Contributing
 Fork, pick an issue to fix from [issues](https://github.com/imor/polyglot/issues)
 or add a missing feature and send a pull request.
