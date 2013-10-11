@@ -6,7 +6,7 @@ module.exports = function(grunt) {
             options: {
                 node: true
             },
-            all: ['Gruntfile.js', 'lib/**/*.js', 'examples/**/*.js', 'test/**/*.js']
+            all: ['Gruntfile.js', 'lib/*.js', 'examples/*.js', 'test/*.js']
         },
         cafemocha: {
             testThis: {
