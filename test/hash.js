@@ -1,7 +1,7 @@
 'use strict';
 /* global suite:true, test:true */
 var assert = require('assert');
-var Polyglot = require('../lib/main.js').Polyglot;
+var Polyglot = require('../lib/main.js');
 var polyglot = new Polyglot();
 
 suite('Polyglot', function() {

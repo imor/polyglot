@@ -9,7 +9,7 @@ Make sure you have [node.js](http://nodejs.org/) installed. Then do:
 
 ## Example
 ```js
-var Polyglot = require('polyglot-chess').Polyglot;
+var Polyglot = require('polyglot-chess');
 
 var obj = new Polyglot();
 
