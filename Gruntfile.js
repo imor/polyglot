@@ -23,5 +23,5 @@ module.exports = function(grunt) {
 
     grunt.registerTask('test', ['cafemocha']);
     grunt.registerTask('lint', ['jshint']);
-    grunt.registerTask('default', ['jshint', 'test']);
+    grunt.registerTask('default', ['lint', 'test']);
 };
