@@ -1,6 +1,8 @@
 Polyglot
 ========
-Polyglot is a node module to search moves in polyglot format opening books.
+Polyglot is a node module to search moves in polyglot format opening books. For
+a description of the polyglot book format refer to
+[this](http://hardy.uhasselt.be/Toga/book_format.html) link.
 
 ## Installation
 Make sure you have [node.js](http://nodejs.org/) installed. Then do:
@@ -27,7 +29,8 @@ Polyglot exposes following functions -
 #### find(fen, bookFile, findBest)
 find takes a fen string and a book file path and looks up the hash in the book
 file. If findBest is true it returns the best move according to the weight
-otherwise it returns a random move with the given hash. If no move is found it
+otherwise it returns a random move with the given hash. The chance of a random
+move being returned is in proportion to its weight. If no move is found it
 returns an empty string.
 
 #### hash(fen)
