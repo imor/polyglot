@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cassert>
 #include <node.h>
+#include <v8.h>
 #include <string.h>
 #include "rkiss.h"
 
@@ -412,27 +413,30 @@ uint16_t FindInternal(uint64_t key, const char* bookFile, bool searchBest) {
 *   param bookFile The book file path
 *   param findBest A flag specifying whether to find the best move or a random one
 */
-Handle<Value> Find(const Arguments& args) {
-    HandleScope scope;
-
+void Find(const v8::FunctionCallbackInfo<Value>& args) {
+   // HandleScope scope;
+   Isolate* isolate = args.GetIsolate();
     if (args.Length() != 3) {
-        return ThrowException(Exception::TypeError(
-            String::New("Incorrect number of arguments."))
+          isolate->ThrowException(Exception::TypeError(
+            String::NewFromUtf8(isolate, "Incorrect number of arguments."))
         );
+        return;
     }
     if (!args[0]->IsString()) {
-        return ThrowException(Exception::TypeError(
-            String::New("First argument should be a string."))
+        isolate->ThrowException(Exception::TypeError(
+            String::NewFromUtf8(isolate, "First argument should be a string."))
         );
+        return;
     }
     if (!args[1]->IsString()) {
-        return ThrowException(Exception::TypeError(
-            String::New("Second argument should be a string."))
+         isolate->ThrowException(Exception::TypeError(
+            String::NewFromUtf8(isolate, "Second argument should be a string."))
         );
+        return;
     }
     if (!args[2]->IsBoolean()) {
-        return ThrowException(Exception::TypeError(
-            String::New("Third argument should be a boolean."))
+         isolate->ThrowException(Exception::TypeError(
+          String::NewFromUtf8(isolate, "Third argument should be a boolean."))
         );
     }
 
@@ -447,8 +451,9 @@ Handle<Value> Find(const Arguments& args) {
     uint16_t move = FindInternal(hash64, bookFile.c_str(), searchBest);
     char moveStr[6];
     MoveToString(moveStr, move);
-    return scope.Close(
-        String::New(moveStr));
+    args.GetReturnValue().Set(String::NewFromUtf8(isolate, moveStr));
+    // return scope.Close(
+    //     String::New(moveStr));
 }
 
 /** Calculates the polyglot hash of a position
@@ -457,33 +462,38 @@ Handle<Value> Find(const Arguments& args) {
 *   param enPassantOffset Offset of the en passant square in the Random64 array
 *   param turnOffset Offset of the turn in the Random64 array
 */
-Handle<Value> Hash(const Arguments& args) {
-    HandleScope scope;
-
+void Hash(const v8::FunctionCallbackInfo<Value>& args) {
+    // HandleScope scope;
+    Isolate* isolate = args.GetIsolate();
     if (args.Length() != 4) {
-        return ThrowException(Exception::TypeError(
-            String::New("Incorrect number of arguments."))
+        isolate->ThrowException(Exception::TypeError(
+            String::NewFromUtf8(isolate, "Incorrect number of arguments."))
         );
+        return;
     }
     if (!args[0]->IsArray()) {
-        return ThrowException(Exception::TypeError(
-            String::New("First argument should be an array."))
+         isolate->ThrowException(Exception::TypeError(
+            String::NewFromUtf8(isolate, "First argument should be an array."))
         );
+        return;
     }
     if (!args[1]->IsArray()) {
-        return ThrowException(Exception::TypeError(
-            String::New("Second argument should be an array."))
+         isolate->ThrowException(Exception::TypeError(
+            String::NewFromUtf8(isolate, "Second argument should be an array."))
         );
+        return;
     }
     if (!args[2]->IsInt32()) {
-        return ThrowException(Exception::TypeError(
-            String::New("Third argument should be an integer."))
+        isolate->ThrowException(Exception::TypeError(
+            String::NewFromUtf8(isolate, "Third argument should be an integer."))
         );
+        return;
     }
     if (!args[3]->IsBoolean()) {
-        return ThrowException(Exception::TypeError(
-            String::New("Fourth argument should be a boolean."))
+        isolate->ThrowException(Exception::TypeError(
+            String::NewFromUtf8(isolate, "Fourth argument should be a boolean."))
         );
+        return;
     }
 
     Handle<Array> pieceOffsets = Handle<Array>::Cast(args[0]);
@@ -508,15 +518,19 @@ Handle<Value> Hash(const Arguments& args) {
     }
     ostringstream o;
     o << hash;
-    return scope.Close(
-        String::New(o.str().c_str()));
+    args.GetReturnValue().Set(String::NewFromUtf8(isolate, o.str().c_str()));
+    // return scope.Close(
+        // String::New(o.str().c_str()));
 }
 
-void RegisterModule(Handle<Object> target) {
-    target->Set(String::NewSymbol("find"),
-        FunctionTemplate::New(Find)->GetFunction());
-    target->Set(String::NewSymbol("hash"),
-        FunctionTemplate::New(Hash)->GetFunction());
+void RegisterModule(Local<Object> exports) {
+  //  Isolate* isolate = Isolate::GetCurrent();
+     NODE_SET_METHOD(exports, "find", Find);
+     NODE_SET_METHOD(exports, "hash", Hash);
+  //  exports->Set(String::NewFromUtf8(isolate, "find"),
+  //    FunctionTemplate::New(isolate, Find)->GetFunction());
+  //  exports->Set(String::NewFromUtf8(isolate, "hash"),
+  //    FunctionTemplate::New(isolate, Hash)->GetFunction());
 }
 
 NODE_MODULE(polyglot, RegisterModule);
